@@ -1,11 +1,13 @@
 // src/NewPost.js
 import React, { useState } from "react";
+import { FormControl, FormLabel, Card, Button, Form, CardBody, CardHeader} from "react-bootstrap";
+import { useTranslation } from 'react-i18next';
 
 function NewPost({ addPost }) {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [imageUrl, setImageUrl] = useState("");
-
+  const { t, i18n } = useTranslation();
   const handleSubmit = (e) => {
     e.preventDefault(); // Prevents page refresh on form submit
 
@@ -26,13 +28,13 @@ function NewPost({ addPost }) {
   };
 
   return (
-    <div className="new-post">
-      <h2>Create a New Post</h2>
-      <form onSubmit={handleSubmit}>
+    <Card className="new-post mt-3">
+      <CardHeader>Create a New Post</CardHeader>
+      <CardBody>
+      <Form onSubmit={handleSubmit} className="mb-2">
         <div>
-          <label htmlFor="title">Title:</label>
-          <input
-            type="text"
+          <FormLabel htmlFor="title">{t("Title")}:</FormLabel>
+          <FormControl
             id="title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -40,8 +42,8 @@ function NewPost({ addPost }) {
           />
         </div>
         <div>
-          <label htmlFor="body">Body:</label>
-          <textarea
+          <FormLabel htmlFor="body">{t("Body")}:</FormLabel>
+          <FormControl
             id="body"
             value={body}
             onChange={(e) => setBody(e.target.value)}
@@ -49,17 +51,20 @@ function NewPost({ addPost }) {
           />
         </div>
         <div>
-          <label htmlFor="imageUrl">Image URL:</label>
-          <input
+          <FormLabel htmlFor="imageUrl">{t("Img")}:</FormLabel>
+          <FormControl
             type="text"
             id="imageUrl"
             value={imageUrl}
             onChange={(e) => setImageUrl(e.target.value)}
           />
         </div>
-        <button type="submit">Create</button>
-      </form>
-    </div>
+        <div className="mt-3">
+          <Button type="submit">{t("Create")}</Button>
+        </div>
+       
+      </Form> </CardBody>
+    </Card>
   );
 }
 

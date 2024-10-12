@@ -1,64 +1,106 @@
 // src/App.js
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Post from "./Post";
 import NewPost from "./NewPost";
-import "./App.css";
+import { Container, Spinner, Row, Col, Alert, Navbar,  Nav, Dropdown, DropdownButton, NavbarBrand } from "react-bootstrap";
+import 'bootstrap/dist/css/bootstrap.min.css';
+import { BIN_ID, ACCESS_KEY } from "../config";
+import { changeLanguage } from "i18next";
+import {useTranslation} from  "react-i18next";
 function App() {
   // State with initial posts
-  const [posts, setPosts] = useState([
-    {
-      "title": "Discover France",
-      "body": "Paris, the city of lights",
-      "imageUrl": "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=MnwzMDkzNjF8MHwxfGFsbHwxfHx8fHx8fHwxNjY1MTI4MzQw&ixlib=rb-1.2.1&q=80&w=1080"
-    },
-    {
-      "title": "The Magic of Japan",
-      "body": "Tokyo at night",
-      "imageUrl": "https://plus.unsplash.com/premium_photo-1666700698920-d2d2bba589f8?q=80&w=2832&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-    },
-    {
-      "title": "A Trip to Morocco",
-      "body": "Exploring Casablanca",
-      "imageUrl": "https://plus.unsplash.com/premium_photo-1697730023504-560a4aab9d95?q=80&w=2930&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-    },
-    {
-      "title": "The Wonders of Egypt",
-      "body": "The Great Pyramids of Giza",
-      "imageUrl": "https://plus.unsplash.com/premium_photo-1661891622579-bee76e28c304?q=80&w=2962&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-    },
-    {
-      "title": "Norway's Fjords",
-      "body": "Breathtaking landscapes",
-      "imageUrl": "https://images.unsplash.com/photo-1473160330398-3aa3dbdf3117?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-    }
-  ]);
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [show, setShow] = useState(false);
+  const { t, i18n } = useTranslation();
 
+  const getData = async () => {
+    try {
+      const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+        method: 'GET',
+        headers: {
+          'X-Access-Key': ACCESS_KEY  // Use Access Key instead of Master Key
+        }
+      });
+  
+      const json = await res.json();
+      setPosts(json.record.posts)
+      setLoading(false);
+    } catch(e) {
+      console.error(e);
+      setPosts([])
+      setLoading(false);
+    }
+  }
+ useEffect(()=> {getData()}, []);
+
+  const savePosts = async (posts) => {
+    try{
+      const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Access-Key': ACCESS_KEY  // Use Access Key
+        },
+        body: JSON.stringify({ posts: posts })
+      });
+      if (res.ok) {
+        setPosts(posts)// Add new post to the array of posts
+      }
+    } catch(e) {
+      console.error(e);
+      setShow(true);
+    }
+  }
   // Function to add a new post to the state
   const addNewPost = (newPost) => {
-    setPosts([newPost,...posts]); // Add new post to the array of posts
+    savePosts([newPost,...posts])
   };
 
   // Function to delete a post by index
   const deletePost = (indexToDelete) => {
     const updatedPosts = posts.filter((post, index) => index !== indexToDelete);
-    setPosts(updatedPosts);
+    savePosts(updatedPosts)
   };
 
-  return (
-    <div className="App">
-      <h1>Posts</h1>
-      <NewPost addPost={addNewPost} />
-      {posts.map((post, index) => (
-        <Post
-          key={index}
-          title={post.title}
-          body={post.body}
-          imageUrl={post.imageUrl}
-          deletePost={() => deletePost(index)} // Pass the delete function
-        />
-      ))}
-    </div>
-  );
+    return (<>
+      <Navbar expand="lg" bg="warning" >
+        <Container fluid>
+              <NavbarBrand>{t("My posts")}</NavbarBrand>
+              <DropdownButton  variant="warning" title="Language" id="basic-nav-dropdown" onSelect={(val)=>changeLanguage(val)}>
+                <Dropdown.Item eventKey="en">English</Dropdown.Item>
+                <Dropdown.Item eventKey="es">Español</Dropdown.Item> 
+              </DropdownButton> 
+        </Container>
+      </Navbar> 
+      <Container>
+        {loading ? 
+        <Spinner animation="grow" size="xl" />:<>
+          <Row className="mb-3">
+            <Col>
+              <NewPost addPost={addNewPost} />
+            </Col>
+          </Row>
+          <Row>
+            {posts.length == 0 ? <div>{t("Noposts")}</div> : posts.map((post, index) => (
+              <Col sm={12} md={6} lg={4}>
+              <Post
+                key={"p" + index + "_" + post.title}
+                title={post.title}
+                body={post.body}
+                imageUrl={post.imageUrl}
+                deletePost={() => deletePost(index)} 
+              /></Col>
+            ))}
+            <Alert variant="danger" onClose={() => setShow(false)} dismissible show={show}>
+              <Alert.Heading>{t("Error")}</Alert.Heading>
+              <p>
+              {t("NotSaved")}
+              </p>
+            </Alert>
+        </Row></>}
+      </Container>
+    </>);
 }
 
 export default App;
